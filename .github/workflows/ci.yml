@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
+    types: [ opened, synchronize ]
     branches: [ main, develop ]
 
 env:
@@ -193,7 +194,68 @@ jobs:
       run: cargo install cargo-audit
 
     - name: Run security audit
-      run: cargo audit
+      run: cargo audit --json > audit-report.json
+
+    - name: Comment PR with audit report
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        python - <<EOF
+        import json
+        import requests
+        
+        # Load audit report
+        with open('audit-report.json', 'r') as f:
+            audit_data = json.load(f)
+            
+        # Create comment content
+        comment = """
+        ### Security Audit Report
+        """
+        
+        if 'vulnerabilities' in audit_data and audit_data['vulnerabilities']:
+            comment += """
+            ⚠️ Found vulnerabilities in dependencies:
+            """
+            for advisory in audit_data['vulnerabilities']:
+                comment += f"""
+            - {advisory['title']} ({advisory['id']})
+                • Package: {advisory['package_name']}
+                • Version: {advisory['version']}
+                • Severity: {advisory['severity']}
+                • Advisory: {advisory['advisory_id']}
+                • Published: {advisory['date']}
+                • Fixed in: {advisory['affected_version']}
+                • Recommendation: {advisory['recommendation']}
+            """
+        else:
+            comment += """
+            ✓ No known vulnerabilities detected in dependencies.
+            """
+        
+        # Post comment to PR
+        pr_number = int("${GITHUB_REF#"pull/"}")
+        url = f"https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/{pr_number}/comments"
+        headers = {
+            'Authorization': f'Bearer ${GITHUB_TOKEN}',
+            'Accept': 'application/vnd.github.v3+json'
+        }
+        
+        # Check existing comments and edit if found
+        response = requests.get(url, headers=headers)
+        existing_comments = response.json()
+        
+        for existing_comment in existing_comments:
+            if '### Security Audit Report' in existing_comment['body']:
+                requests.patch(
+                    existing_comment['url'],
+                    json={'body': comment},
+                    headers=headers
+                )
+                break
+        else:
+            requests.post(url, json={'body': comment}, headers=headers)
+        EOF
 
   coverage:
     name: Code Coverage
@@ -210,10 +272,91 @@ jobs:
       run: cargo install cargo-tarpaulin
 
     - name: Generate coverage
-      run: cargo tarpaulin --out xml --output-dir coverage
+      run: cargo tarpaulin --out json --output-dir coverage
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+    # - name: Upload coverage to Codecov
+    #   uses: codecov/codecov-action@v4
+    #   with:
+    #     files: ./coverage/cobertura.xml
+    #     fail_ci_if_error: false
+
+    - name: Upload test report artifact
+      uses: actions/upload-artifact@v4
       with:
-        files: ./coverage/cobertura.xml
-        fail_ci_if_error: false
+        name: coverage-report
+        path: ./coverage/tarpaulin-report.json
+
+    - name: Comment PR with coverage
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+          python - <<EOF
+          import json
+          import requests
+          
+          # Load JSON report
+          with open('./coverage/tarpaulin-report.json', 'r') as f:
+              coverage_report = json.load(f)
+              
+          # Calculate overall coverage
+          total_lines = sum(len(file['covered']) for file in coverage_report.values())
+          covered_lines = sum(sum(1 for hits in file['covered'].values() if hits > 0) 
+                            for file in coverage_report.values())
+          coverage_percentage = (covered_lines / total_lines * 100) if total_lines > 0 else 0
+          
+          # Create comment content
+          comment = f"""
+          ### Code Coverage Report
+          #### Overall Coverage: **{coverage_percentage:.1f}%**
+          
+          <details>
+              <summary>File Coverage Details</summary>
+              <table>
+                  <tr>
+                      <th>File</th>
+                      <th>Coverage</th>
+                  </tr>
+          """
+          
+          # Add file details
+          for filename, coverage_data in sorted(coverage_report.items()):
+              total_lines = len(coverage_data['covered'])
+              covered_lines = sum(1 for hits in coverage_data['covered'].values() 
+                                if hits > 0)
+              file_coverage = (covered_lines / total_lines * 100) if total_lines > 0 else 0
+              
+              comment += f"""
+              <tr>
+                  <td>{filename}</td>
+                  <td>{file_coverage:.1f}%</td>
+              </tr>
+              """
+          
+          comment += """
+              </table>
+          </details>
+          """
+          
+          # Post comment to PR
+          pr_number = int("${GITHUB_REF#"pull/"}")
+          url = f"https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/{pr_number}/comments"
+          headers = {
+              'Authorization': f'Bearer ${GITHUB_TOKEN}',
+              'Accept': 'application/vnd.github.v3+json'
+          }
+          
+          # Check existing comments and edit if found
+          response = requests.get(url, headers=headers)
+          existing_comments = response.json()
+          
+          for existing_comment in existing_comments:
+              if '### Code Coverage Report' in existing_comment['body']:
+                  requests.patch(
+                      existing_comment['url'],
+                      json={'body': comment},
+                      headers=headers
+                  )
+                  break
+          else:
+              requests.post(url, json={'body': comment}, headers=headers)
+          EOF

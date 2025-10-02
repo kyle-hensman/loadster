@@ -1,18 +1,18 @@
 {
-  "url": "http://localhost:8080",
-  "date": "2025-10-02T18:09:29.630748Z",
-  "total_requests": 50,
+  "url": "http://example.com",
+  "date": "2025-10-02T19:38:49.958331Z",
+  "total_requests": 100,
   "concurrency": 10,
-  "total_duration_secs": 0.076450542,
+  "total_duration_secs": 0.583890833,
   "successful": 10,
   "failed": 0,
-  "requests_per_sec": 654.0176000321882,
+  "requests_per_sec": 171.26489122325373,
   "latency": {
-    "avg_ms": 30.692866,
-    "p50_ms": 42.569458999999995,
-    "p95_ms": 76.37325,
-    "p99_ms": 76.37325,
-    "min_ms": 1.039709,
-    "max_ms": 76.37325
+    "avg_ms": 72.294474,
+    "p50_ms": 46.839375000000004,
+    "p95_ms": 184.094208,
+    "p99_ms": 184.094208,
+    "min_ms": 40.601708,
+    "max_ms": 184.094208
   }
 }
