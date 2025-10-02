@@ -1,10 +1,10 @@
-use clap::Parser;
-use std::time::{Duration, Instant};
-use std::sync::Arc;
-use tokio::task::JoinSet;
-use serde::{Serialize, Deserialize};
-use std::fs;
 use chrono::{DateTime, Utc};
+use clap::Parser;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::task::JoinSet;
 
 const VERSION: &str = "1.0.0";
 
@@ -36,13 +36,16 @@ struct LatencyStats {
 #[command(name = "loadster")]
 #[command(author = "Kyle Hensman")]
 #[command(version = VERSION)]
-#[command(about = "Simple HTTP load testing CLI", long_about = "
+#[command(
+    about = "Simple HTTP load testing CLI",
+    long_about = "
 A lightweight HTTP load testing tool that sends concurrent requests
 and reports latency statistics including p50, p95, and p99 percentiles.
 
 Example:
   loadster https://example.com -n 200 -c 20
-")]
+"
+)]
 struct Args {
     /// URL to test (must include http:// or https://)
     #[arg(value_name = "URL")]
@@ -57,14 +60,19 @@ struct Args {
     concurrency: usize,
 
     /// Output file path for JSON report (optional)
-    #[arg(short = 'o', long, value_name = "FILE", default_value = "loadster-report.json")]
+    #[arg(
+        short = 'o',
+        long,
+        value_name = "FILE",
+        default_value = "loadster-report.json"
+    )]
     output: Option<String>,
 }
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    
+
     let url = &args.url;
     let total_requests = args.requests;
     let concurrency = args.concurrency;
@@ -75,7 +83,7 @@ async fn main() {
 
     let client = Arc::new(reqwest::Client::new());
     let url = Arc::new(url.to_string());
-    
+
     let start = Instant::now();
     let mut tasks = JoinSet::new();
 
@@ -83,12 +91,12 @@ async fn main() {
     for _ in 0..total_requests {
         let client = Arc::clone(&client);
         let url = Arc::clone(&url);
-        
+
         tasks.spawn(async move {
             let req_start = Instant::now();
             let result = client.get(url.as_str()).send().await;
             let duration = req_start.elapsed();
-            
+
             match result {
                 Ok(resp) => (true, resp.status().as_u16(), duration),
                 Err(_) => (false, 0, duration),
@@ -135,10 +143,13 @@ async fn main() {
     println!("Total time: {:.2}s", total_duration.as_secs_f64());
     println!("Successful: {}", success);
     println!("Failed: {}", failed);
-    println!("Requests/sec: {:.2}", total_requests as f64 / total_duration.as_secs_f64());
-    
+    println!(
+        "Requests/sec: {:.2}",
+        total_requests as f64 / total_duration.as_secs_f64()
+    );
+
     let mut latency_stats = None;
-    
+
     if !durations.is_empty() {
         durations.sort();
         let avg: Duration = durations.iter().sum::<Duration>() / durations.len() as u32;
@@ -147,7 +158,7 @@ async fn main() {
         let p50 = durations[durations.len() / 2];
         let p95 = durations[durations.len() * 95 / 100];
         let p99 = durations[durations.len() * 99 / 100];
-        
+
         println!("\nLatency:");
         println!("  Min: {:.2}ms", min.as_secs_f64() * 1000.0);
         println!("  Avg: {:.2}ms", avg.as_secs_f64() * 1000.0);

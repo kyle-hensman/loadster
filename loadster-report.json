@@ -1,0 +1,18 @@
+{
+  "url": "http://localhost:8080",
+  "date": "2025-10-02T18:09:29.630748Z",
+  "total_requests": 50,
+  "concurrency": 10,
+  "total_duration_secs": 0.076450542,
+  "successful": 10,
+  "failed": 0,
+  "requests_per_sec": 654.0176000321882,
+  "latency": {
+    "avg_ms": 30.692866,
+    "p50_ms": 42.569458999999995,
+    "p95_ms": 76.37325,
+    "p99_ms": 76.37325,
+    "min_ms": 1.039709,
+    "max_ms": 76.37325
+  }
+}
