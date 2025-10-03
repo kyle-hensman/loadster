@@ -5,6 +5,7 @@ use std::fs;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::task::JoinSet;
+use reqwest::{Client};
 
 const VERSION: &str = "1.0.0";
 
@@ -71,31 +72,31 @@ struct Args {
 
 #[tokio::main]
 async fn main() {
-    let args = Args::parse();
+    let args: Args = Args::parse();
 
-    let url = &args.url;
-    let total_requests = args.requests;
-    let concurrency = args.concurrency;
+    let url: &String = &args.url;
+    let total_requests: usize = args.requests;
+    let concurrency: usize = args.concurrency;
 
     println!("Load testing: {}", url);
     println!("Total requests: {}", total_requests);
     println!("Concurrency: {}\n", concurrency);
 
-    let client = Arc::new(reqwest::Client::new());
-    let url = Arc::new(url.to_string());
+    let client: Arc<Client> = Arc::new(Client::new());
+    let url: Arc<String> = Arc::new(url.to_string());
 
-    let start = Instant::now();
-    let mut tasks = JoinSet::new();
+    let start: Instant = Instant::now();
+    let mut tasks: JoinSet<(bool, u16, Duration)> = JoinSet::new();
 
     // Spawn all tasks
     for _ in 0..total_requests {
-        let client = Arc::clone(&client);
-        let url = Arc::clone(&url);
+        let client: Arc<Client> = Arc::clone(&client);
+        let url: Arc<String> = Arc::clone(&url);
 
         tasks.spawn(async move {
-            let req_start = Instant::now();
-            let result = client.get(url.as_str()).send().await;
-            let duration = req_start.elapsed();
+            let req_start: Instant = Instant::now();
+            let result: Result<reqwest::Response, reqwest::Error> = client.get(url.as_str()).send().await;
+            let duration: Duration = req_start.elapsed();
 
             match result {
                 Ok(resp) => (true, resp.status().as_u16(), duration),
@@ -110,10 +111,10 @@ async fn main() {
     }
 
     // Collect all results
-    let mut success = 0;
-    let mut failed = 0;
-    let mut durations = Vec::new();
-    let mut completed = 0;
+    let mut success: usize = 0;
+    let mut failed: usize = 0;
+    let mut durations: Vec<Duration> = Vec::new();
+    let mut completed: i32 = 0;
 
     while let Some(result) = tasks.join_next().await {
         if let Ok((ok, _status, dur)) = result {
@@ -137,7 +138,7 @@ async fn main() {
         println!();
     }
 
-    let total_duration = start.elapsed();
+    let total_duration: Duration = start.elapsed();
     println!("\n\nResults:");
     println!("========");
     println!("Total time: {:.2}s", total_duration.as_secs_f64());
@@ -148,16 +149,16 @@ async fn main() {
         total_requests as f64 / total_duration.as_secs_f64()
     );
 
-    let mut latency_stats = None;
+    let mut latency_stats: Option<LatencyStats> = None;
 
     if !durations.is_empty() {
         durations.sort();
         let avg: Duration = durations.iter().sum::<Duration>() / durations.len() as u32;
-        let min = durations[0];
-        let max = durations[durations.len() - 1];
-        let p50 = durations[durations.len() / 2];
-        let p95 = durations[durations.len() * 95 / 100];
-        let p99 = durations[durations.len() * 99 / 100];
+        let min: Duration = durations[0];
+        let max: Duration = durations[durations.len() - 1];
+        let p50: Duration = durations[durations.len() / 2];
+        let p95: Duration = durations[durations.len() * 95 / 100];
+        let p99: Duration = durations[durations.len() * 99 / 100];
 
         println!("\nLatency:");
         println!("  Min: {:.2}ms", min.as_secs_f64() * 1000.0);
@@ -181,7 +182,7 @@ async fn main() {
     if let Some(output_path) = &args.output {
         let timestamp: DateTime<Utc> = Utc::now();
 
-        let report = Report {
+        let report: Report = Report {
             url: url.to_string(),
             date: timestamp,
             total_requests,
