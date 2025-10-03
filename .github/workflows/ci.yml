@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
     types: [ opened, synchronize ]
     branches: [ main, develop ]
@@ -198,31 +196,11 @@ jobs:
       run: cargo audit --json > cargo-audit-report.json || true # Continue on audit failures
       shell: bash
 
-    - name: Generate formatted audit report
-      id: format_audit_report
-      run: |
-        if [ -s cargo-audit-report.json ]; then
-          # Format the JSON report into a human-readable string
-          # You can use `jq` or a custom script for more elaborate formatting
-          REPORT_CONTENT=$(cat cargo-audit-report.json | jq -r 'to_entries[] | "## \(."key")\n```json\n\(."value" | tojson)\n```"')
-          echo "audit_report_output<<EOF" >> $GITHUB_OUTPUT
-          echo "# Code Coverage Report" >> $GITHUB_OUTPUT
-          echo "$REPORT_CONTENT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        else
-          echo "audit_report_output<<EOF" >> $GITHUB_OUTPUT
-          echo "# Code Coverage Report" >> $GITHUB_OUTPUT
-          echo "No code coverage report found." >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-
-    - name: Add comment to PR
-      uses: peter-evans/create-or-update-comment@v3
+    - name: Upload audit report artifact
+      uses: actions/upload-artifact@v4
       with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: ${{ steps.format_audit_report.outputs.audit_report_output }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        name: cargo-audit-report
+        path: ./cargo-audit-report.json
 
   coverage:
     name: Code Coverage
@@ -252,29 +230,3 @@ jobs:
       with:
         name: coverage-report
         path: ./coverage/tarpaulin-report.json
-
-    - name: Generate formatted coverage report
-      id: format_coverage_report
-      run: |
-        if [ -s code-coverage-report.json ]; then
-          # Format the JSON report into a human-readable string
-          # You can use `jq` or a custom script for more elaborate formatting
-          REPORT_CONTENT=$(cat code-coverage-report.json | jq -r 'to_entries[] | "## \(."key")\n```json\n\(."value" | tojson)\n```"')
-          echo "coverage_report_output<<EOF" >> $GITHUB_OUTPUT
-          echo "# Cargo Audit Report" >> $GITHUB_OUTPUT
-          echo "$REPORT_CONTENT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        else
-          echo "coverage_report_output<<EOF" >> $GITHUB_OUTPUT
-          echo "# Cargo Audit Report" >> $GITHUB_OUTPUT
-          echo "No vulnerabilities found or cargo audit failed to produce a report." >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        fi
-      shell: bash
-
-    - name: Add comment to PR
-      uses: peter-evans/create-or-update-comment@v3
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body: ${{ steps.format_coverage_report.outputs.coverage_report_output }}
-        token: ${{ secrets.GITHUB_TOKEN }}
