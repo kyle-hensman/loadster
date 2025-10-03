@@ -61,12 +61,7 @@ struct Args {
     concurrency: usize,
 
     /// Output file path for JSON report (optional)
-    #[arg(
-        short = 'o',
-        long,
-        value_name = "FILE",
-        default_value = "loadster-report.json"
-    )]
+    #[arg(short = 'o', long, value_name = "FILE")]
     output: Option<String>,
 }
 
