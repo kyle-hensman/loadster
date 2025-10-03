@@ -1,18 +1,18 @@
 {
   "url": "http://example.com",
-  "date": "2025-10-02T19:38:49.958331Z",
-  "total_requests": 100,
+  "date": "2025-10-03T14:02:49.888785Z",
+  "total_requests": 50,
   "concurrency": 10,
-  "total_duration_secs": 0.583890833,
+  "total_duration_secs": 51.563475542,
   "successful": 10,
   "failed": 0,
-  "requests_per_sec": 171.26489122325373,
+  "requests_per_sec": 0.9696786237629288,
   "latency": {
-    "avg_ms": 72.294474,
-    "p50_ms": 46.839375000000004,
-    "p95_ms": 184.094208,
-    "p99_ms": 184.094208,
-    "min_ms": 40.601708,
-    "max_ms": 184.094208
+    "avg_ms": 39.136687,
+    "p50_ms": 38.624334000000005,
+    "p95_ms": 46.69625,
+    "p99_ms": 46.69625,
+    "min_ms": 35.61,
+    "max_ms": 46.69625
   }
 }

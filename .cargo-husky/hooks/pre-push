@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Run cargo linting
+echo "Running cargo test before pushing..."
+cargo fmt -- --check || { echo "Format check failed! Aborting push."; exit 1; }
+cargo cargo clippy -- -D warnings || { echo "Linting failed! Aborting push."; exit 1; }
+
+# Run cargo test before pushing
+echo "Running cargo test before pushing..."
+cargo test --verbose || { echo "Tests failed! Aborting push."; exit 1; }
+
+# Prevent pushing directly to the 'main' branch
+# current_branch=$(git rev-parse --abbrev-ref HEAD)
+# if [ "$current_branch" = "main" ]; then
+#   echo "Direct pushes to 'main' branch are not allowed. Please use a pull request."
+#   exit 1
+# fi

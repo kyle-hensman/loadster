@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
 use clap::Parser;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::task::JoinSet;
-use reqwest::{Client};
 
 const VERSION: &str = "1.0.0";
 
@@ -95,7 +95,8 @@ async fn main() {
 
         tasks.spawn(async move {
             let req_start: Instant = Instant::now();
-            let result: Result<reqwest::Response, reqwest::Error> = client.get(url.as_str()).send().await;
+            let result: Result<reqwest::Response, reqwest::Error> =
+                client.get(url.as_str()).send().await;
             let duration: Duration = req_start.elapsed();
 
             match result {

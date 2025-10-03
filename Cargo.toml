@@ -20,6 +20,7 @@ assert_cmd = "2.0"
 predicates = "3.0"
 tempfile = "3.8"
 tokio-test = "0.4"
+cargo-husky = "0.1.0"
 
 [profile.test]
 opt-level = 1
