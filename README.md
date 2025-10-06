@@ -1,5 +1,7 @@
 # Loadster CLI
 
+![alt text](loadster.png "Loadster")
+
 A lightweight, fast, and simple HTTP load testing tool written in Rust. Perfect for quickly stress testing your web applications and APIs with concurrent requests.
 
 ## Features
